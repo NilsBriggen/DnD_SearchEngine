@@ -1,31 +1,22 @@
 import ItemDB
 from fuzzywuzzy import fuzz
 
-class crawler:
 
+class Engine:
     def __init__(self):
-        self.db = ItemDB.DB
-        self.to_crawl = []
-        self.index = {}
-        print(f"Database: {self.db['name']} | Version: {self.db['version']}")
-
-    def crawl(self):
-        print("Crawling...")
-        # return keys of self.db if key not equal to "name" or "version"
-        self.to_crawl = [i for i in self.db.keys() if i != "name" and i != "version"]
-        for i in self.to_crawl:
-            current_keys = self.db[i].keys()
-            for j in current_keys:
-                if j not in self.index.keys() and not j == "content":
-                    self.index[j] = []
-                self.index[j].append(i)
-        print("Crawling complete.")
+        self.db = ItemDB()
+        self.index = [i for i in self.db.keys() if i not in ["name", "version"]]
 
     def search(self, query):
         results = []
         smallest_fuzz = 0
-        for i in self.index.keys():
-            for j in self.index[i]:
-                if fuzz.ratio(query, i) >= smallest_fuzz:
-                    smallest_fuzz = fuzz.ratio(query, i)
-                    results.append(j)
+        for i in self.index:
+            for j in range(len(self.db[i])):
+                current_values = self.db[i][j].values()
+                for k in current_values:
+                    if fuzz.ratio(query, k) == smallest_fuzz:
+                        results.append(self.db[i][j]["id"])
+                    elif fuzz.ratio(query, k) > smallest_fuzz:
+                        results = [self.db[i][j]["id"]]
+                        smallest_fuzz = fuzz.ratio(query, k)
+        return results
