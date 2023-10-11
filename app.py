@@ -2,6 +2,7 @@ import requests
 from fuzzywuzzy import fuzz
 from multiprocessing import Pool
 from flask import Flask, request, render_template, jsonify
+from json import dumps
 
 
 baseUrl = "https://dnd5eapi.co"
@@ -49,10 +50,40 @@ def searcher(args):
         results.append(bestFuzz)
     return results
 
+def format_list(value):
+    return "\n".join(value) if isinstance(value, list) else value
+
+def format_dict(value):
+    if 'url' in value:
+        return [value['url'].split('/')[-1], value['url']]
+    elif all(isinstance(item, dict) for item in value.values()):
+        return {key: format_dict(item) for key, item in value.items()}
+    else:
+        return value
+
+def format_value(value):
+    if isinstance(value, list):
+        return [format_dict(item) if isinstance(item, dict) else item for item in value]
+    elif isinstance(value, dict):
+        return format_dict(value)
+    else:
+        return str(value)  # Convert non-dict and non-list values to string
+
 def formatter(results):
     content = [requests.get(baseUrl + result["url"]).json() for result in results]
-    print(content)
-    exit()
+    formatted_list = []
+    for item in content:
+        formatted_dict = {}
+        item.pop("url", None)  # use None as default value to avoid KeyError
+        for key, value in item.items():
+            # Normalize keys
+            formatted_key = key.replace("_", " ").capitalize()
+
+            # Format value based on its type or structure
+            formatted_dict[formatted_key] = format_value(value)
+
+        formatted_list.append(formatted_dict)
+    return formatted_list
 
 
 def search(query):
@@ -65,10 +96,7 @@ def search(query):
         # remove fuzz ratio
         for i in range(len(results)):
             results[i] = results[i][0]
-        formatter(results)
-        return results
-
-search("fireball")
+        return formatter(results)
 
 app = Flask(__name__)
 
