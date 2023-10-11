@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Search</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+        }
+        button {
+            margin-top: 10px;
+            padding: 10px;
+            cursor: pointer;
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        #details {
+            border: 1px solid #ccc;
+            padding: 20px;
+            margin-top: 20px;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <form method="post">
+        <input type="text" name="query" placeholder="Search">
+        <button type="submit">Search</button>
+    </form>
+    <div>
+        {% for result in results %}
+            {% for item in result[:-1] %}
+                <button onclick="fetchData('{{ item.url }}', '{{ item.name }}')">{{ item.name }}</button>
+            {% endfor %}
+        {% endfor %}
+    </div>
+    <div id="details">
+        <!-- API Data Will Appear Here -->
+    </div>
+    <script>
+        function fetchData(url, name) {
+            fetch('/fetch', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ url: url }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                let readable = `<h3>${name}</h3>`;
+                for (let key in data) {
+                    if (key !== "url") { // Exclude URL from output
+                        let value = data[key];
+                        let displayKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()); // Remove underscore and capitalize
+                        
+                        if (Array.isArray(value)) {
+                            value = value.map(v => v.url ? `<a href="${v.url}">${v.name}</a>` : v.name).join(", ");
+                        } else if (typeof value === 'object') {
+                            value = JSON.stringify(value); // Convert object to string representation
+                        }
+        
+                        readable += `<div><strong>${displayKey}:</strong> ${value}</div>`;
+                    }
+                }
+                document.getElementById("details").innerHTML = readable;
+            });
+        }
+    </script>
+</body>
+</html>
