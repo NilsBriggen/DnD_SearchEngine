@@ -49,6 +49,11 @@ def searcher(args):
         results.append(bestFuzz)
     return results
 
+def formatter(results):
+    content = [requests.get(baseUrl + result["url"]).json() for result in results]
+    print(content)
+    exit()
+
 
 def search(query):
     if __name__ == "__main__":
@@ -56,7 +61,14 @@ def search(query):
         results = pool.map(searcher, [(target, query) for target in categoryList])
         # sort by best fuzz ratio
         results.sort(key=lambda x: x[-1], reverse=True)
+        results = results[:3]
+        # remove fuzz ratio
+        for i in range(len(results)):
+            results[i] = results[i][0]
+        formatter(results)
         return results
+
+search("fireball")
 
 app = Flask(__name__)
 
